@@ -7,7 +7,7 @@ less. For example, 250/189 is in the 16-OPSL and above, but not the 15-OPSL or
 below, because 189 = 3 * 3 * 3 * 7, and 3 + 3 + 3 + 7 = 16, and because
 250 = 2 * 5 * 5 * 5, and 5 + 5 + 5 = 15.
 
-Code by Tristan Bay | March and April 2023
+Code by Tristan Bay | March and April 2023 | Public domain code
 */
 
 #include <stdio.h>
