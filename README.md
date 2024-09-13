@@ -1,1 +1,1 @@
-These are various scripts I wrote to find/analyze microtonal tuning systems. I have decided to make everything I upload here public domain.
+These are various scripts I wrote which relate to microtonal music theory, including for finding tuning systems and converting just intervals to their prime factorizations. I have decided to make everything I upload to this repository public domain.
