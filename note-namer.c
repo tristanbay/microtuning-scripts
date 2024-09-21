@@ -124,6 +124,8 @@ int majsec(int edo, int p5)
 
 int apotome(int edo, int p5)
 {
+	if ((edo % 7 == 0 || edo % 5 == 0) && edo < 36)
+		return edo;
 	return (p5 * 7) - (edo * 4);
 }
 
