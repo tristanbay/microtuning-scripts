@@ -23,26 +23,22 @@ void printnom(int nom)
 void printupdown(int ups)
 {
 	if (ups < 0) {
-		for (int i = 0; i > ups; i--) {
+		for (int i = 0; i > ups; --i)
 			printf("v");
-		}
 	} else {
-		for (int i = 0; i < ups; i++) {
+		for (int i = 0; i < ups; ++i)
 			printf("^");
-		}
 	}
 }
 
 void printliftdrop(int lifts)
 {
 	if (lifts < 0) {
-		for (int i = 0; i > lifts; i--) {
+		for (int i = 0; i > lifts; --i)
 			printf("\\");
-		}
 	} else {
-		for (int i = 0; i < lifts; i++) {
+		for (int i = 0; i < lifts; ++i)
 			printf("/");
-		}
 	}
 }
 
@@ -56,7 +52,7 @@ void printsharp(int sharps, _Bool half)
 		if (half) {
 			if (sharps % 2 != 0) {
 				printf("‡");
-				sharps--;
+				--sharps;
 			}
 			if (sharps % 4 != 0) {
 				printf("#");
@@ -69,7 +65,7 @@ void printsharp(int sharps, _Bool half)
 		} else {
 			if (sharps % 2 != 0) {
 				printf("#");
-				sharps--;
+				--sharps;
 			}
 			while (sharps > 0) {
 				printf("x");
@@ -87,15 +83,13 @@ void printflat(int flats, _Bool half)
 		if (half) {
 			if (flats % 2 != 0) {
 				printf("d");
-				flats--;
+				--flats;
 			}
-			for (int i = 0; i < flats; i += 2) {
+			for (int i = 0; i < flats; i += 2)
 				printf("b");
-			}
 		} else {
-			for (int i = 0; i < flats; i++) {
+			for (int i = 0; i < flats; ++i)
 				printf("b");
-			}
 		}
 	}
 }
@@ -135,36 +129,30 @@ int apotome(int edo, int p5)
 
 int updown(int edo, int p5)
 {
-	if (edo < 66) {
+	if (edo < 66)
 		return 1;
-	}
-	if (edo == 129) {
+	if (edo == 129)
 		return 3;
-	}
 	int y3 = round(log(1.25) / log(2) * (float)edo);
 	int sc = (p5 * 4) - (edo * 2) - y3;
-	if (sc == 0) {
+	if (sc == 0)
 		return 1;
-	}
 	return sc;
 }
 
 _Bool verysharp(int edo, int p5)
 {
-	if ((float)p5 / (float)edo > 0.6) {
+	if ((float)p5 / (float)edo > 0.6)
 		return true;
-	}
-	if (edo < 35 && edo % 5 == 0) {
+	if (edo < 35 && edo % 5 == 0)
 		return true;
-	}
 	return false;
 }
 
 _Bool halfacc(int a1)
 {
-	if (a1 % 2 == 0) {
+	if (a1 % 2 == 0)
 		return true;
-	}
 	return false;
 }
 
@@ -212,27 +200,27 @@ void sharpnotes(Note notes[], int edo, int p5, int p2, int ap, int ud,
 {
 	float apcount = 0, udcount = 0;
 	int r_ap = 0, r_ud = 0, ldcount = 0;
-	for (int i = 1; i < p2; i++) {
+	for (int i = 1; i < p2; ++i) {
 		setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap, &r_ud);
 		setsharpnotes(&notes[i], 0, r_ap, r_ud, ldcount);
 		setsharpnotes(&notes[edo - p5 + i], 3, r_ap, r_ud, ldcount);
 		setsharpnotes(&notes[p5 + i], 4, r_ap, r_ud, ldcount);
 	}
 	if (penta) {
-		for (int i = 1; i < (edo - p5) - p2; i++) {
+		for (int i = 1; i < (edo - p5) - p2; ++i) {
 			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
 			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud, ldcount);
 			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud, ldcount);
 		}
 	} else {
-		for (int i = 1; i < p2; i++) {
+		for (int i = 1; i < p2; ++i) {
 			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
 			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud, ldcount);
 			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud, ldcount);
 		}
-		for (int i = 1; i < (edo - p5) - (p2 * 2); i++) {
+		for (int i = 1; i < (edo - p5) - (p2 * 2); ++i) {
 			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
 			setsharpnotes(&notes[(p2 * 2) + i], 2, r_ap, r_ud, ldcount);
@@ -264,27 +252,27 @@ void flatnotes(Note notes[], int edo, int p5, int p2, int ap, int ud,
 {
 	float apcount = 0, udcount = 0;
 	int r_ap = 0, r_ud = 0, ldcount = 0;
-	for (int i = 1; i < p2; i++) {
+	for (int i = 1; i < p2; ++i) {
 		setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap, &r_ud);
 		setflatnotes(&notes[p2 - i], 1, r_ap, r_ud, ldcount);
 		setflatnotes(&notes[p5 - i], 4, r_ap, r_ud, ldcount);
 		setflatnotes(&notes[p5 + p2 - i], 5, r_ap, r_ud, ldcount);
 	}
 	if (penta) {
-		for (int i = 1; i < (edo - p5) - p2; i++) {
+		for (int i = 1; i < (edo - p5) - p2; ++i) {
 			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
 			setflatnotes(&notes[edo - i], 0, r_ap, r_ud, ldcount);
 			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud, ldcount);
 		}
 	} else {
-		for (int i = 1; i < (edo - p5) - (p2 * 2); i++) {
+		for (int i = 1; i < (edo - p5) - (p2 * 2); ++i) {
 			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
-			setflatnotes(&notes[edo - i], 4, r_ap, r_ud, ldcount);
-			setflatnotes(&notes[edo - p5 - i], 5, r_ap, r_ud, ldcount);
+			setflatnotes(&notes[edo - i], 0, r_ap, r_ud, ldcount);
+			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud, ldcount);
 		}
-		for (int i = 1; i < p2; i++) {
+		for (int i = 1; i < p2; ++i) {
 			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
 				&r_ud);
 			setflatnotes(&notes[(p2 * 2) - i], 2, r_ap, r_ud, ldcount);
@@ -307,11 +295,10 @@ int main(int argc, char** argv)
 	int ud = updown(edo, p5);
 	_Bool penta = verysharp(edo, p5);
 	_Bool halves = halfacc(a1);
-	if (halves) {
+	if (halves)
 		a1 /= 2;
-	}
 	Note notes[edo];
-	for (int i = 0; i < edo; i++) {
+	for (int i = 0; i < edo; ++i) {
 		notes[i].sharps = 0;
 		notes[i].s_ups = 0;
 		notes[i].s_lifts = 0;
@@ -327,9 +314,8 @@ int main(int argc, char** argv)
 		basicnotes(notes, edo, p5, p2, penta);
 		sharpnotes(notes, edo, p5, p2, a1, ud, penta);
 		flatnotes(notes, edo, p5, p2, a1, ud, penta);
-		for (int i = 0; i < edo; i++) {
+		for (int i = 0; i < edo; ++i)
 			printnote(notes[i], halves);
-		}
 	}
 	return 0;
 }
