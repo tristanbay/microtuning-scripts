@@ -10,13 +10,13 @@
 
 typedef struct Note
 {
-	int sharps, s_ups, s_lifts, s_nom;
-	int flats, f_ups, f_lifts, f_nom;
+	int sharps, s_ups, s_lifts, s_nom; // sharp note name
+	int flats, f_ups, f_lifts, f_nom; // flat note name
 } Note;
 
 void printnom(int nom)
 {
-	char c = ((nom + 2) % 7) + 65;
+	char c = ((nom + 2) % 7) + 65; // capital C through G, then wraps to A and B
 	printf("%c", c);
 }
 
@@ -42,7 +42,7 @@ void printliftdrop(int lifts)
 	}
 }
 
-void printflat(int flats, _Bool half);
+void printflat(int flats, _Bool half); // prototype for printsharp to reference
 
 void printsharp(int sharps, _Bool half)
 {
@@ -96,7 +96,7 @@ void printflat(int flats, _Bool half)
 
 void printnote(Note note, _Bool halves)
 {
-	if (note.s_nom == note.f_nom) {
+	if (note.s_nom == note.f_nom) { // for natural notes, only print one name
 		printnom(note.s_nom);
 	} else {
 		printliftdrop(note.s_lifts);
@@ -122,7 +122,7 @@ int majsec(int edo, int p5)
 	return (p5 * 2) - edo;
 }
 
-int apotome(int edo, int p5)
+int apotome(int edo, int p5) // augmented unison, sharps and flats
 {
 	if ((edo % 7 == 0 || edo % 5 == 0) && edo < 36)
 		return edo;
@@ -142,7 +142,7 @@ int updown(int edo, int p5)
 	return sc;
 }
 
-_Bool verysharp(int edo, int p5)
+_Bool verysharp(int edo, int p5) // for smaller 5n EDOs & for > 720-cent fifths
 {
 	if ((float)p5 / (float)edo > 0.6)
 		return true;
@@ -151,7 +151,7 @@ _Bool verysharp(int edo, int p5)
 	return false;
 }
 
-_Bool halfacc(int a1)
+_Bool halfacc(int a1) // determining if there should be half-accidentals
 {
 	if (a1 % 2 == 0)
 		return true;
@@ -160,7 +160,7 @@ _Bool halfacc(int a1)
 
 void basicnotes(Note notes[], int edo, int p5, int p2, _Bool penta)
 {
-	notes[0].s_nom = 0;
+	notes[0].s_nom = 0; // calculate natural notes one by one
 	notes[p2].s_nom = 1;
 	notes[edo - p5].s_nom = 3;
 	notes[p5].s_nom = 4;
@@ -178,13 +178,24 @@ void basicnotes(Note notes[], int edo, int p5, int p2, _Bool penta)
 	}
 }
 
+int trround(float x) // rounding but halfway is rounded towards 0 instead of up
+{
+	if (x - floor(x) == 0.5) {
+		if (x > 0)
+			return floor(x);
+		if (x < 0)
+			return ceil(x);
+	}
+	return round(x);
+}
+
 void setsharpcounts(int x, int ap, int ud, float* apc, float* udc, int* ldc,
 		int* ra, int* ru)
 {
 	*apc = (float)x / (float)ap;
-	*ra = round(*apc);
+	*ra = trround(*apc);
 	*udc = ((*ra * ap) - x) / (float)ud;
-	*ru = round(*udc);
+	*ru = trround(*udc);
 	*ldc = (*ru * ud) - ((*ra * ap) - x);
 	*ru *= -1;
 }
@@ -235,9 +246,9 @@ void setflatcounts(int x, int ap, int ud, float* apc, float* udc, int* ldc,
 		int* ra, int* ru)
 {
 	*apc = (float)x / (float)ap;
-	*ra = round(*apc);
+	*ra = trround(*apc);
 	*udc = ((*ra * ap) - x) / (float)ud;
-	*ru = round(*udc);
+	*ru = trround(*udc);
 	*ldc = ((*ra * ap) - x) - (*ru * ud);
 }
 
@@ -297,7 +308,7 @@ int main(int argc, char** argv)
 	int ud = updown(edo, p5);
 	_Bool penta = verysharp(edo, p5);
 	_Bool halves = halfacc(a1);
-	if (halves)
+	if (halves) // use half of augmented unison instead of true a1 if possible
 		a1 /= 2;
 	Note notes[edo];
 	for (int i = 0; i < edo; ++i) {
