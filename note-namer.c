@@ -1,17 +1,18 @@
 /* note-namer: A microtonal music tool by Tristan Bay
  * Provides a list of note names for a given equal division of the octave (EDO)
- * Ups and downs style notation, sometimes w/ half-accidentals, drops, and lifts
- * Written Sep 2024, public domain code
+ * Ups and downs style notation, sometimes with half-accidentals
+ * Written Sep 2024 and Oct 2025, public domain code
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
+
+#define TALLY 5 // constant for quips and quids
 
 typedef struct Note
 {
-	int sharps, s_ups, s_lifts, s_nom; // sharp note name
-	int flats, f_ups, f_lifts, f_nom; // flat note name
+	int sharps, s_ups, s_nom; // sharp note name
+	int flats, f_ups, f_nom; // flat note name
 } Note;
 
 void printnom(int nom)
@@ -22,29 +23,31 @@ void printnom(int nom)
 
 void printupdown(int ups)
 {
-	if (ups < 0) {
-		for (int i = 0; i > ups; --i)
+	int quips = ups / 5;
+	int rem_ups = ups % 5;
+	if (abs(rem_ups) == 4) {
+		rem_ups /= -4;
+		quips = ups > 0 ? quips + 1 : quips - 1;
+	}
+	if (rem_ups < 0) {
+		for (int i = 0; i > rem_ups; --i)
 			printf("v");
 	} else {
-		for (int i = 0; i < ups; ++i)
+		for (int i = 0; i < rem_ups; ++i)
 			printf("^");
 	}
-}
-
-void printliftdrop(int lifts)
-{
-	if (lifts < 0) {
-		for (int i = 0; i > lifts; --i)
-			printf("\\");
+	if (quips < 0) {
+		for (int i = 0; i > quips; --i)
+			printf("<");
 	} else {
-		for (int i = 0; i < lifts; ++i)
-			printf("/");
+		for (int i = 0; i < quips; ++i)
+			printf(">");
 	}
 }
 
-void printflat(int flats, _Bool half); // prototype for printsharp to reference
+void printflat(int flats, bool half); // prototype for printsharp to reference
 
-void printsharp(int sharps, _Bool half)
+void printsharp(int sharps, bool half)
 {
 	if (sharps < 0) {
 		printflat(sharps * -1, half);
@@ -75,7 +78,7 @@ void printsharp(int sharps, _Bool half)
 	}
 }
 
-void printflat(int flats, _Bool half)
+void printflat(int flats, bool half)
 {
 	if (flats < 0) {
 		printsharp(flats * -1, half);
@@ -94,17 +97,15 @@ void printflat(int flats, _Bool half)
 	}
 }
 
-void printnote(Note note, _Bool halves)
+void printnote(Note note, bool halves)
 {
 	if (note.s_nom == note.f_nom) { // for natural notes, only print one name
 		printnom(note.s_nom);
 	} else {
-		printliftdrop(note.s_lifts);
 		printupdown(note.s_ups);
 		printnom(note.s_nom);
 		printsharp(note.sharps, halves);
 		printf(", ");
-		printliftdrop(note.f_lifts);
 		printupdown(note.f_ups);
 		printnom(note.f_nom);
 		printflat(note.flats, halves);
@@ -129,20 +130,7 @@ int apotome(int edo, int p5) // augmented unison, sharps and flats
 	return (p5 * 7) - (edo * 4);
 }
 
-int updown(int edo, int p5)
-{
-	if (edo < 66)
-		return 1;
-	if (edo == 129)
-		return 3;
-	int y3 = round(log(1.25) / log(2) * (float)edo);
-	int sc = (p5 * 4) - (edo * 2) - y3;
-	if (sc == 0)
-		return 1;
-	return sc;
-}
-
-_Bool verysharp(int edo, int p5) // for smaller 5n EDOs & for > 720-cent fifths
+bool verysharp(int edo, int p5) // for smaller 5n EDOs & for > 720-cent fifths
 {
 	if ((float)p5 / (float)edo > 0.6)
 		return true;
@@ -151,14 +139,14 @@ _Bool verysharp(int edo, int p5) // for smaller 5n EDOs & for > 720-cent fifths
 	return false;
 }
 
-_Bool halfacc(int a1) // determining if there should be half-accidentals
+bool halfacc(int a1) // determining if there should be half-accidentals
 {
 	if (a1 % 2 == 0)
 		return true;
 	return false;
 }
 
-void basicnotes(Note notes[], int edo, int p5, int p2, _Bool penta)
+void basicnotes(Note notes[], int edo, int p5, int p2, bool penta)
 {
 	notes[0].s_nom = 0; // calculate natural notes one by one
 	notes[p2].s_nom = 1;
@@ -189,107 +177,92 @@ int trround(float x) // rounding but halfway is rounded towards 0 instead of up
 	return round(x);
 }
 
-void setsharpcounts(int x, int ap, int ud, float* apc, float* udc, int* ldc,
-		int* ra, int* ru)
+void setsharpcounts(int x, int ap, float* apc, float* udc, int* ra, int* ru)
 {
 	*apc = (float)x / (float)ap;
 	*ra = trround(*apc);
-	*udc = ((*ra * ap) - x) / (float)ud;
-	*ru = trround(*udc);
-	*ldc = (*ru * ud) - ((*ra * ap) - x);
-	*ru *= -1;
+	*udc = ((*ra * ap) - x);
+	*ru = -trround(*udc);
 }
 
-void setsharpnotes(Note* note, int nom, int r_ap, int r_ud, int ldcount)
+void setsharpnotes(Note* note, int nom, int r_ap, int r_ud)
 {
 	note->s_nom = nom;
 	note->sharps = r_ap;
 	note->s_ups = r_ud;
-	note->s_lifts = ldcount;
 }
 
-void sharpnotes(Note notes[], int edo, int p5, int p2, int ap, int ud,
-		_Bool penta)
+void sharpnotes(Note notes[], int edo, int p5, int p2, int ap, bool penta)
 {
 	float apcount = 0, udcount = 0;
-	int r_ap = 0, r_ud = 0, ldcount = 0;
+	int r_ap = 0, r_ud = 0;
 	for (int i = 1; i < p2; ++i) {
-		setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap, &r_ud);
-		setsharpnotes(&notes[i], 0, r_ap, r_ud, ldcount);
-		setsharpnotes(&notes[edo - p5 + i], 3, r_ap, r_ud, ldcount);
-		setsharpnotes(&notes[p5 + i], 4, r_ap, r_ud, ldcount);
+		setsharpcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+		setsharpnotes(&notes[i], 0, r_ap, r_ud);
+		setsharpnotes(&notes[edo - p5 + i], 3, r_ap, r_ud);
+		setsharpnotes(&notes[p5 + i], 4, r_ap, r_ud);
 	}
 	if (penta) {
 		for (int i = 1; i < (edo - p5) - p2; ++i) {
-			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud, ldcount);
-			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud, ldcount);
+			setsharpcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud);
+			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud);
 		}
 	} else {
 		for (int i = 1; i < p2; ++i) {
-			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud, ldcount);
-			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud, ldcount);
+			setsharpcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setsharpnotes(&notes[p2 + i], 1, r_ap, r_ud);
+			setsharpnotes(&notes[p5 + p2 + i], 5, r_ap, r_ud);
 		}
 		for (int i = 1; i < (edo - p5) - (p2 * 2); ++i) {
-			setsharpcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setsharpnotes(&notes[(p2 * 2) + i], 2, r_ap, r_ud, ldcount);
-			setsharpnotes(&notes[p5 + (p2 * 2) + i], 6, r_ap, r_ud, ldcount);
+			setsharpcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setsharpnotes(&notes[(p2 * 2) + i], 2, r_ap, r_ud);
+			setsharpnotes(&notes[p5 + (p2 * 2) + i], 6, r_ap, r_ud);
 		}
 	}
 }
 
-void setflatcounts(int x, int ap, int ud, float* apc, float* udc, int* ldc,
-		int* ra, int* ru)
+void setflatcounts(int x, int ap, float* apc, float* udc, int* ra, int* ru)
 {
 	*apc = (float)x / (float)ap;
 	*ra = trround(*apc);
-	*udc = ((*ra * ap) - x) / (float)ud;
+	*udc = ((*ra * ap) - x);
 	*ru = trround(*udc);
-	*ldc = ((*ra * ap) - x) - (*ru * ud);
 }
 
-void setflatnotes(Note* note, int nom, int r_ap, int r_ud, int ldcount)
+void setflatnotes(Note* note, int nom, int r_ap, int r_ud)
 {
 	note->f_nom = nom;
 	note->flats = r_ap;
 	note->f_ups = r_ud;
-	note->f_lifts = ldcount;
 }
 
-void flatnotes(Note notes[], int edo, int p5, int p2, int ap, int ud,
-		_Bool penta)
+void flatnotes(Note notes[], int edo, int p5, int p2, int ap, bool penta)
 {
 	float apcount = 0, udcount = 0;
-	int r_ap = 0, r_ud = 0, ldcount = 0;
+	int r_ap = 0, r_ud = 0;
 	for (int i = 1; i < p2; ++i) {
-		setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap, &r_ud);
-		setflatnotes(&notes[p2 - i], 1, r_ap, r_ud, ldcount);
-		setflatnotes(&notes[p5 - i], 4, r_ap, r_ud, ldcount);
-		setflatnotes(&notes[p5 + p2 - i], 5, r_ap, r_ud, ldcount);
+		setflatcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+		setflatnotes(&notes[p2 - i], 1, r_ap, r_ud);
+		setflatnotes(&notes[p5 - i], 4, r_ap, r_ud);
+		setflatnotes(&notes[p5 + p2 - i], 5, r_ap, r_ud);
 	}
 	if (penta) {
 		for (int i = 1; i < (edo - p5) - p2; ++i) {
-			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setflatnotes(&notes[edo - i], 0, r_ap, r_ud, ldcount);
-			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud, ldcount);
+			setflatcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setflatnotes(&notes[edo - i], 0, r_ap, r_ud);
+			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud);
 		}
 	} else {
 		for (int i = 1; i < (edo - p5) - (p2 * 2); ++i) {
-			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setflatnotes(&notes[edo - i], 0, r_ap, r_ud, ldcount);
-			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud, ldcount);
+			setflatcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setflatnotes(&notes[edo - i], 0, r_ap, r_ud);
+			setflatnotes(&notes[edo - p5 - i], 3, r_ap, r_ud);
 		}
 		for (int i = 1; i < p2; ++i) {
-			setflatcounts(i, ap, ud, &apcount, &udcount, &ldcount, &r_ap,
-				&r_ud);
-			setflatnotes(&notes[(p2 * 2) - i], 2, r_ap, r_ud, ldcount);
-			setflatnotes(&notes[p5 + (p2 * 2) - i], 6, r_ap, r_ud, ldcount);
+			setflatcounts(i, ap, &apcount, &udcount, &r_ap, &r_ud);
+			setflatnotes(&notes[(p2 * 2) - i], 2, r_ap, r_ud);
+			setflatnotes(&notes[p5 + (p2 * 2) - i], 6, r_ap, r_ud);
 		}
 	}
 }
@@ -305,28 +278,25 @@ int main(int argc, char** argv)
 	int p5 = fifth(edo);
 	int p2 = majsec(edo, p5);
 	int a1 = apotome(edo, p5);
-	int ud = updown(edo, p5);
-	_Bool penta = verysharp(edo, p5);
-	_Bool halves = halfacc(a1);
+	bool penta = verysharp(edo, p5);
+	bool halves = halfacc(a1);
 	if (halves) // use half of augmented unison instead of true a1 if possible
 		a1 /= 2;
 	Note notes[edo];
 	for (int i = 0; i < edo; ++i) {
 		notes[i].sharps = 0;
 		notes[i].s_ups = 0;
-		notes[i].s_lifts = 0;
 		notes[i].s_nom = 0;
 		notes[i].flats = 0;
 		notes[i].f_ups = 0;
-		notes[i].f_lifts = 0;
 		notes[i].f_nom = 0;
 	}
 	if (edo < 7 && edo != 5) {
-		printf("EDO too small or subset of 12-equal.\n");	
+		printf("EDO is a subset of 12-equal or negative.\n");	
 	} else {
 		basicnotes(notes, edo, p5, p2, penta);
-		sharpnotes(notes, edo, p5, p2, a1, ud, penta);
-		flatnotes(notes, edo, p5, p2, a1, ud, penta);
+		sharpnotes(notes, edo, p5, p2, a1, penta);
+		flatnotes(notes, edo, p5, p2, a1, penta);
 		for (int i = 0; i < edo; ++i)
 			printnote(notes[i], halves);
 	}
